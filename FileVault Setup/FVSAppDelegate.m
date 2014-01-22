@@ -28,6 +28,7 @@ NSString * const FVSDoNotAskForSetup     = @"FVSDoNotAskForSetup";
 NSString * const FVSForceSetup           = @"FVSForceSetup";
 NSString * const FVSUseKeychain          = @"FVSUseKeychain";
 NSString * const FVSCreateRecoveryKey    = @"FVSCreateRecoveryKey";
+NSString * const FVSRotatePRK            = @"FVSRotatePRK";
 NSString * const FVSUsername             = @"FVSUsername";
 NSString * const FVSUid                  = @"FVSUid";
 
@@ -61,6 +62,8 @@ NSString * const FVSUid                  = @"FVSUid";
                       forKey:FVSUseKeychain];
     [defaultValues setObject:[NSNumber numberWithBool:YES]
                       forKey:FVSCreateRecoveryKey];
+    [defaultValues setObject:[NSNumber numberWithBool:NO]
+                      forKey:FVSRotatePRK];
     [defaultValues setObject:username
                       forKey:FVSUsername];
     [defaultValues setObject:[NSNumber numberWithInt:uid]
@@ -75,7 +78,9 @@ NSString * const FVSUid                  = @"FVSUid";
     // opted out, and simply exit.
     uid_t realuid = getuid();
     if (realuid == 0) {
-        if ([FVSAppDelegate rootVolumeIsEncrypted]) {
+        BOOL fvsrotateprk = [[[NSUserDefaults standardUserDefaults]
+                                 valueForKeyPath:FVSRotatePRK] boolValue];
+        if ([FVSAppDelegate rootVolumeIsEncrypted] && !fvsrotateprk) {
             exit(0);
         }
         [NSMenu setMenuBarVisible:NO];
@@ -287,8 +292,10 @@ click the enable button to continue."];
     
     // Is FileVault enabled?
     BOOL fvstate = [FVSAppDelegate rootVolumeIsEncrypted];
+    BOOL fvsrotateprk = [[[NSUserDefaults standardUserDefaults]
+                             valueForKeyPath:FVSRotatePRK] boolValue];
     
-    if (fvstate == YES) {
+    if (fvstate == YES && fvsrotateprk == NO) {
         // ALERT
         NSAlert *alert = [[NSAlert alloc] init];
         [alert setMessageText:@"Already Enabled"];

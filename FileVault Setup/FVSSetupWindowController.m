@@ -142,6 +142,8 @@ static float vigourOfShake   = 0.02f;
 - (void)runFileVaultSetupForUser:(NSString *)name
                     withPassword:(NSString *)passwordString
 {
+    BOOL fvsRotatePrk = [[[NSUserDefaults standardUserDefaults]
+                          valueForKeyPath:FVSRotatePRK] boolValue];
     // UI Setup
     [_setup setEnabled:NO];
     [_cancel setEnabled:NO];
@@ -149,19 +151,26 @@ static float vigourOfShake   = 0.02f;
     [_spinner startAnimation:self];
 
     // Setup Task args
-    NSMutableArray *task_args = [NSMutableArray arrayWithObjects:@"enable",
+    NSMutableArray *task_args = [[NSMutableArray alloc] init];
+    if (fvsRotatePrk && [[[NSUserDefaults standardUserDefaults]
+                             valueForKeyPath:FVSCreateRecoveryKey] boolValue]) {
+        task_args = [NSMutableArray arrayWithObjects:@"changerecovery", @"-personal",
+                     @"-outputplist", @"-inputplist", nil]; }
+    else {
+        task_args = [NSMutableArray arrayWithObjects:@"enable",
                                  @"-outputplist", @"-inputplist", nil];
-    
-    if (![[[NSUserDefaults standardUserDefaults]
-          valueForKeyPath:FVSCreateRecoveryKey] boolValue]) {
-        [task_args insertObject:@"-norecoverykey" atIndex:1];
-    }
-    
-    if ([[[NSUserDefaults standardUserDefaults]
-          valueForKeyPath:FVSUseKeychain] boolValue]) {
-        [task_args insertObject:@"-keychain" atIndex:1];
-    }
         
+        if (![[[NSUserDefaults standardUserDefaults]
+               valueForKeyPath:FVSCreateRecoveryKey] boolValue]) {
+            [task_args insertObject:@"-norecoverykey" atIndex:1];
+        }
+        
+        if ([[[NSUserDefaults standardUserDefaults]
+              valueForKeyPath:FVSUseKeychain] boolValue]) {
+            [task_args insertObject:@"-keychain" atIndex:1];
+        }
+    }
+    
     // Property List Out
     NSString *outputFile = @"/private/var/root/fdesetup_output.plist";
     [[NSFileManager defaultManager] createFileAtPath:outputFile
