@@ -21,8 +21,6 @@
 
 #import "FVSAppDelegate.h"
 #include <SystemConfiguration/SystemConfiguration.h>
-#include <IOKit/IOKitLib.h>
-#include <DiskArbitration/DASession.h>
 #import "FVSApplicationInstance.h"
 
 NSString * const FVSDoNotAskForSetup     = @"FVSDoNotAskForSetup";

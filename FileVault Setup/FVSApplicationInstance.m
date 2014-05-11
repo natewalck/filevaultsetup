@@ -7,6 +7,8 @@
 //
 
 #import "FVSApplicationInstance.h"
+#import <DiskArbitration/DASession.h>
+#import <IOKit/IOKitLib.h>
 
 @implementation FVSApplicationInstance
 
