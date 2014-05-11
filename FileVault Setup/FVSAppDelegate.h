@@ -22,15 +22,15 @@
 #import <Cocoa/Cocoa.h>
 #import "FVSSetupWindowController.h"
 #import "FVSConstants.h"
+#import "FVSSetupControllerDelegate.h"
 
-@interface FVSAppDelegate : NSObject <NSApplicationDelegate> {
+@interface FVSAppDelegate : NSObject <NSApplicationDelegate, FVSSetupControllerDelegate> {
     FVSSetupWindowController *setupController;
 }
 
 @property (assign) IBOutlet NSWindow *window;
 @property (assign) IBOutlet NSTextField *instruct;
-
-+ (BOOL)rootVolumeIsEncrypted;
+@property (nonatomic) id<FVSSetupControllerDelegate> setupDelegate;
 
 - (IBAction)showSetupSheet:(id)sender;
 - (IBAction)didEndSetupSheet:(id)sender returnCode:(int)result;
