@@ -20,6 +20,7 @@
  */
 
 #import "FVSSetupWindowController.h"
+#import "FVSApplicationInstance.h"
 
 @implementation FVSSetupWindowController
 
@@ -32,17 +33,18 @@ static float vigourOfShake   = 0.02f;
 @synthesize setup    = _setup;
 @synthesize cancel   = _cancel;
 
-- (id)init
-{
+- (id)init {
     self = [super initWithWindowNibName:@"FVSSetupWindowController"];
     
-    username = [[NSUserDefaults standardUserDefaults] objectForKey:FVSUsername];
-    
-    int result = seteuid(0);
-    if (!result == 0) {
-        // NSLog(@"Could not set UID, error: %i", result);
-        // exit(result);
-    }
+	if (self) {
+		username = [[NSUserDefaults standardUserDefaults] objectForKey:FVSUsername];
+		
+		int result = [FVSApplicationInstance setUserId:0];
+		if (!result == 0) {
+			NSLog(@"Could not set UID, error: %i", result);
+			// exit(result);
+		}
+	}
     
     return self;
 }
@@ -50,75 +52,50 @@ static float vigourOfShake   = 0.02f;
 // All credit to Matt Long
 // This function was lifted directly from his awesome blog.
 // http://www.cimgf.com/2008/02/27/core-animation-tutorial-window-shake-effect/
-- (CAKeyframeAnimation *)shakeAnimation:(NSRect)frame
-{
+- (CAKeyframeAnimation *)shakeAnimation:(NSRect)frame {
     CAKeyframeAnimation *shakeAnimation = [CAKeyframeAnimation animation];
 	
     CGMutablePathRef shakePath = CGPathCreateMutable();
     CGPathMoveToPoint(shakePath, NULL, NSMinX(frame), NSMinY(frame));
 	int index;
-	for (index = 0; index < numberOfShakes; ++index)
-	{
-		CGPathAddLineToPoint(shakePath,
-                             NULL,
-                             NSMinX(frame) - frame.size.width * vigourOfShake,
-                             NSMinY(frame));
-		CGPathAddLineToPoint(shakePath,
-                             NULL,
-                             NSMinX(frame) + frame.size.width * vigourOfShake,
-                             NSMinY(frame));
+	for (index = 0; index < numberOfShakes; ++index) {
+		CGPathAddLineToPoint(shakePath, NULL, NSMinX(frame) - frame.size.width * vigourOfShake, NSMinY(frame));
+		CGPathAddLineToPoint(shakePath, NULL, NSMinX(frame) + frame.size.width * vigourOfShake, NSMinY(frame));
 	}
     CGPathCloseSubpath(shakePath);
     shakeAnimation.path = shakePath;
     shakeAnimation.duration = durationOfShake;
     CFRelease(shakePath);
+	
     return shakeAnimation;
 }
 
-- (void)windowDidLoad
-{
-    [super windowDidLoad];
-}
-
-- (IBAction)setupAction:(NSButton *)sender
-{
+- (IBAction)setupAction:(NSButton *)sender {
     if ([self passwordMatch:[_password stringValue] forUsername:username]) {
-        [self runFileVaultSetupForUser:username
-                          withPassword:[_password stringValue]];
+        [self runFileVaultSetupForUser:username withPassword:[_password stringValue]];
     } else {
         // Shake it!
         [self harlemShake:@"Password Incorrect"];
     }
 }
 
-- (IBAction)cancelAction:(NSButton *)sender
-{
+- (IBAction)cancelAction:(NSButton *)sender {
     [NSApp endSheet:[self window] returnCode:-1];
 }
 
-- (BOOL)passwordMatch:(NSString *)password forUsername:(NSString *)name
-{
+- (BOOL)passwordMatch:(NSString *)password forUsername:(NSString *)name {
     BOOL match = NO;
 	ODSessionRef session = NULL;
 	ODNodeRef node = NULL;
 	ODRecordRef	rec = NULL;
     
     session = ODSessionCreate(NULL, NULL, NULL);
-    node = ODNodeCreateWithNodeType(NULL,
-                                    session,
-                                    kODNodeTypeAuthentication,
-                                    NULL);
+    node = ODNodeCreateWithNodeType(NULL, session, kODNodeTypeAuthentication, NULL);
     if (node) {
-        rec = ODNodeCopyRecord(node,
-                               kODRecordTypeUsers,
-                               (__bridge CFStringRef)(name),
-                               NULL,
-                               NULL);
+        rec = ODNodeCopyRecord(node, kODRecordTypeUsers, (__bridge CFStringRef)(name), NULL, NULL);
         
         if (rec) {
-            match = ODRecordVerifyPassword(rec,
-                                           (__bridge CFStringRef)(password),
-                                           NULL);
+            match = ODRecordVerifyPassword(rec, (__bridge CFStringRef)(password), NULL);
             CFRelease(rec);
         }
         
@@ -132,18 +109,15 @@ static float vigourOfShake   = 0.02f;
 - (void)harlemShake:(NSString *)message
 {
     [_message setStringValue:message];
-    [_sheet setAnimations:[NSDictionary
-                           dictionaryWithObject:[self
-                                                 shakeAnimation:[_sheet frame]]
-                           forKey:@"frameOrigin"]];
+    [_sheet setAnimations:@{@"frameOrigin": [self shakeAnimation:[_sheet frame]]}];
 	[[_sheet animator] setFrameOrigin:[_sheet frame].origin];
 }
 
-- (void)runFileVaultSetupForUser:(NSString *)name
-                    withPassword:(NSString *)passwordString
-{
-    BOOL fvsRotatePrk = [[[NSUserDefaults standardUserDefaults]
-                          valueForKeyPath:FVSRotatePRK] boolValue];
+- (void)runFileVaultSetupForUser:(NSString *)name withPassword:(NSString *)passwordString {
+    BOOL fvsRotatePrk = [FVSApplicationInstance valueForDefaultsKey:FVSRotatePRK];
+	BOOL fvsCreateRecovery = [FVSApplicationInstance valueForDefaultsKey:FVSCreateRecoveryKey];
+	BOOL fvsUseKeychain = [FVSApplicationInstance valueForDefaultsKey:FVSUseKeychain];
+	
     // UI Setup
     [_setup setEnabled:NO];
     [_cancel setEnabled:NO];
@@ -151,87 +125,75 @@ static float vigourOfShake   = 0.02f;
     [_spinner startAnimation:self];
 
     // Setup Task args
-    NSMutableArray *task_args = [[NSMutableArray alloc] init];
-    if (fvsRotatePrk && [[[NSUserDefaults standardUserDefaults]
-                             valueForKeyPath:FVSCreateRecoveryKey] boolValue]) {
-        task_args = [NSMutableArray arrayWithObjects:@"changerecovery", @"-personal",
-                     @"-outputplist", @"-inputplist", nil]; }
-    else {
-        task_args = [NSMutableArray arrayWithObjects:@"enable",
-                                 @"-outputplist", @"-inputplist", nil];
+    NSMutableArray *task_args;
+    if (fvsRotatePrk && fvsCreateRecovery) {
+        task_args = [@[@"changerecovery", @"-personal", @"-outputplist", @"-inputplist"] mutableCopy];
+	}
+	else {
+        task_args = [@[@"enable", @"-outputplist", @"-inputplist"] mutableCopy];
         
-        if (![[[NSUserDefaults standardUserDefaults]
-               valueForKeyPath:FVSCreateRecoveryKey] boolValue]) {
-            [task_args insertObject:@"-norecoverykey" atIndex:1];
+        if (!fvsCreateRecovery) {
+			[task_args insertObject:@"-norecoverykey" atIndex:1];
         }
         
-        if ([[[NSUserDefaults standardUserDefaults]
-              valueForKeyPath:FVSUseKeychain] boolValue]) {
+        if (fvsUseKeychain) {
             [task_args insertObject:@"-keychain" atIndex:1];
         }
     }
     
     // Property List Out
     NSString *outputFile = @"/private/var/root/fdesetup_output.plist";
-    [[NSFileManager defaultManager] createFileAtPath:outputFile
-                                            contents:nil
-                                          attributes:nil];
-    NSFileHandle *outHandle = [NSFileHandle
-                               fileHandleForWritingAtPath:outputFile];
-    
-    // The Property List for Input
-    NSDictionary *input = @{ @"Username" : name, @"Password" : passwordString };
-    
-    // Task Setup
-    NSTask *theTask = [[NSTask alloc] init];
-    [theTask setLaunchPath:@"/usr/bin/fdesetup"];
-    [theTask setArguments:task_args];
-    [theTask setStandardOutput:outHandle];
-    
-    NSPipe *errorPipe = [NSPipe pipe];
-    [theTask setStandardError:errorPipe];
-    
-    NSPipe *inputPipe = [NSPipe pipe];
-    [theTask setStandardInput:inputPipe];
-    NSFileHandle *writeHandle = [inputPipe fileHandleForWriting];
-    
-    // Task Run
-    [theTask launch];
-    
-    // Task Input
-    NSData *data = [NSPropertyListSerialization
-                    dataFromPropertyList:input
-                    format:NSPropertyListBinaryFormat_v1_0
-                    errorDescription:nil];
-    
-    [writeHandle writeData:data];
-    [writeHandle closeFile];
-    
-    // Task Error
-    NSString *error = [[NSString alloc]
-                       initWithData:[[errorPipe fileHandleForReading]
-                                     readDataToEndOfFile]
-                       encoding:NSUTF8StringEncoding];
-    
-    // If the last char of error is a newline, remove it
-    if ([error characterAtIndex:[error length] -1] == NSNewlineCharacter) {
-        error = [error substringToIndex:[error length] -1];
-    }
-    
-    // Clean up
-    [theTask waitUntilExit];
-    
-    // Close
-    int result = [theTask terminationStatus];
-    [self setSetupError:error];
-     
-    [NSApp endSheet:[self window] returnCode:result];
+    BOOL outputFileCreateResult = [[NSFileManager defaultManager] createFileAtPath:outputFile contents:nil attributes:nil];
+	if (outputFileCreateResult) {
+		NSFileHandle *outHandle = [NSFileHandle fileHandleForWritingAtPath:outputFile];
+		
+		// The Property List for Input
+		NSDictionary *input = @{ @"Username" : name, @"Password" : passwordString };
+		
+		// Task Setup
+		NSTask *theTask = [[NSTask alloc] init];
+		[theTask setLaunchPath:@"/usr/bin/fdesetup"];
+		[theTask setArguments:task_args];
+		[theTask setStandardOutput:outHandle];
+		
+		NSPipe *errorPipe = [NSPipe pipe];
+		[theTask setStandardError:errorPipe];
+		
+		NSPipe *inputPipe = [NSPipe pipe];
+		[theTask setStandardInput:inputPipe];
+		NSFileHandle *writeHandle = [inputPipe fileHandleForWriting];
+		
+		// Task Run
+		[theTask launch];
+		
+		// Task Input
+		NSData *data = [NSPropertyListSerialization dataFromPropertyList:input format:NSPropertyListBinaryFormat_v1_0 errorDescription:nil];
+		
+		[writeHandle writeData:data];
+		[writeHandle closeFile];
+		
+		// Task Error
+		NSString *error = [[NSString alloc] initWithData:[[errorPipe fileHandleForReading] readDataToEndOfFile] encoding:NSUTF8StringEncoding];
+		
+		// If the last char of error is a newline, remove it
+		if ([error characterAtIndex:[error length] -1] == NSNewlineCharacter) {
+			error = [error substringToIndex:[error length] -1];
+		}
+		
+		// Clean up
+		[theTask waitUntilExit];
+		
+		// Close
+		int result = [theTask terminationStatus];
+		[self setSetupError:error];
+		
+		[NSApp endSheet:[self window] returnCode:result];
+	}
 }
 
-- (void)dealloc
-{
-    int result = seteuid([[[NSUserDefaults standardUserDefaults]
-              objectForKey:FVSUid] intValue]);
+- (void)dealloc {
+	uid_t userId = [[[NSUserDefaults standardUserDefaults] objectForKey:FVSUid] intValue];
+    int result = [FVSApplicationInstance setUserId:userId];
 
     if (!result == 0) {
         NSLog(@"Could not set UID, error: %i", result);

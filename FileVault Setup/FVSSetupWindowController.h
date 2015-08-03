@@ -41,8 +41,7 @@
 
 - (void)harlemShake:(NSString *)message;
 - (BOOL)passwordMatch:(NSString *)password forUsername:(NSString *)name;
-- (void)runFileVaultSetupForUser:(NSString *)name
-                    withPassword:(NSString *)passwordString;
+- (void)runFileVaultSetupForUser:(NSString *)name withPassword:(NSString *)passwordString;
 
 
 @end

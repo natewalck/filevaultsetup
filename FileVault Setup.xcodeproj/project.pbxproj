@@ -21,6 +21,7 @@
 		1993381416E6F7000029B411 /* FVSSetupWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1993381216E6F7000029B411 /* FVSSetupWindowController.xib */; };
 		19EE18F316F6DD3F00134C7B /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 19EE18F216F6DD3F00134C7B /* IOKit.framework */; };
 		19EE18F516F6DDE800134C7B /* DiskArbitration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 19EE18F416F6DDE800134C7B /* DiskArbitration.framework */; };
+		224C216E191EF325003516C1 /* FVSApplicationInstance.m in Sources */ = {isa = PBXBuildFile; fileRef = 224C216D191EF325003516C1 /* FVSApplicationInstance.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,9 @@
 		1993381216E6F7000029B411 /* FVSSetupWindowController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = FVSSetupWindowController.xib; sourceTree = "<group>"; };
 		19EE18F216F6DD3F00134C7B /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		19EE18F416F6DDE800134C7B /* DiskArbitration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiskArbitration.framework; path = System/Library/Frameworks/DiskArbitration.framework; sourceTree = SDKROOT; };
+		224C216C191EF325003516C1 /* FVSApplicationInstance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FVSApplicationInstance.h; sourceTree = "<group>"; };
+		224C216D191EF325003516C1 /* FVSApplicationInstance.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FVSApplicationInstance.m; sourceTree = "<group>"; };
+		224C216F191EF40F003516C1 /* FVSSetupControllerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FVSSetupControllerDelegate.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,6 +122,9 @@
 				1993381216E6F7000029B411 /* FVSSetupWindowController.xib */,
 				1993380616E6EE030029B411 /* MainMenu.xib */,
 				199337F816E6EE030029B411 /* Supporting Files */,
+				224C216C191EF325003516C1 /* FVSApplicationInstance.h */,
+				224C216D191EF325003516C1 /* FVSApplicationInstance.m */,
+				224C216F191EF40F003516C1 /* FVSSetupControllerDelegate.h */,
 			);
 			path = "FileVault Setup";
 			sourceTree = "<group>";
@@ -162,7 +169,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = FVS;
-				LastUpgradeCheck = 0460;
+				LastUpgradeCheck = 0510;
 				ORGANIZATIONNAME = "Simon Fraser Universty";
 			};
 			buildConfigurationList = 199337E916E6EE030029B411 /* Build configuration list for PBXProject "FileVault Setup" */;
@@ -205,6 +212,7 @@
 				199337FE16E6EE030029B411 /* main.m in Sources */,
 				1993380516E6EE030029B411 /* FVSAppDelegate.m in Sources */,
 				1993381316E6F7000029B411 /* FVSSetupWindowController.m in Sources */,
+				224C216E191EF325003516C1 /* FVSApplicationInstance.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,7 +250,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -275,7 +282,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
